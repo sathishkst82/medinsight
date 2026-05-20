@@ -6,6 +6,7 @@ on:
       environment:
         type: string
         required: true
+        default: ''
 
 jobs:
   validate:
