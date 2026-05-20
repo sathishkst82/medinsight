@@ -1,0 +1,16 @@
+name: terraform-destroy-apply
+on: { workflow_call: { inputs: { environment: { type: string, required: true } } } }
+jobs:
+  destroy-apply:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions: { id-token: write, contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: tfdestroy-${{ inputs.environment }}, path: . }
+      - uses: azure/login@v2
+        with: { client-id: ${{ vars.AZURE_CLIENT_ID }}, tenant-id: ${{ vars.AZURE_TENANT_ID }}, subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }} }
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform apply -auto-approve tfdestroy
+        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
