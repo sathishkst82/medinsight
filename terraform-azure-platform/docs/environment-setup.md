@@ -1,0 +1,5 @@
+# GitHub Environment Configuration Guide
+Create `DEV`, `UAT`, `PROD` environments. Enable required reviewer approvals for `PROD`.
+
+Variables: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID.
+Secrets: TF_BACKEND_RESOURCE_GROUP, TF_BACKEND_STORAGE_ACCOUNT, TF_BACKEND_CONTAINER, TF_BACKEND_KEY, WIZ_CLIENT_ID, WIZ_CLIENT_SECRET, EXTRA_ARGS.
