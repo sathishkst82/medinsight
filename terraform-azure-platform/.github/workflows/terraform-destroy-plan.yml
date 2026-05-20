@@ -10,7 +10,7 @@ jobs:
       - uses: azure/login@v2
         with: { client-id: ${{ vars.AZURE_CLIENT_ID }}, tenant-id: ${{ vars.AZURE_TENANT_ID }}, subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }} }
       - uses: hashicorp/setup-terraform@v3
-      - run: terraform init
+      - run: terraform init -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER_NAME }}" -backend-config="key=${{ inputs.environment }}.tfstate"
         working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
       - run: terraform plan -destroy -out=tfdestroy
         working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
