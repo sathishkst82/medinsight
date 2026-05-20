@@ -6,11 +6,20 @@ jobs:
     environment: ${{ inputs.environment }}
     permissions: { id-token: write, contents: read }
     steps:
+      - name: Set environment path
+        id: env-path
+        run: |
+          case "${{ inputs.environment }}" in
+            DEV) echo "path=dev" >> $GITHUB_OUTPUT ;;
+            UAT) echo "path=uat" >> $GITHUB_OUTPUT ;;
+            *) echo "path=prod" >> $GITHUB_OUTPUT ;;
+          esac
+
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { name: tfdestroy-${{ inputs.environment }}, path: . }
+        with: { name: tfdestroy-${{ inputs.environment }}, path: environments/${{ steps.env-path.outputs.path }} }
       - uses: azure/login@v2
         with: { client-id: ${{ vars.AZURE_CLIENT_ID }}, tenant-id: ${{ vars.AZURE_TENANT_ID }}, subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }} }
       - uses: hashicorp/setup-terraform@v3
       - run: terraform apply -auto-approve tfdestroy
-        working-directory: ${{ inputs.environment == 'DEV' && 'environments/dev' || inputs.environment == 'UAT' && 'environments/uat' || 'environments/prod' }}
+        working-directory: environments/${{ steps.env-path.outputs.path }}
