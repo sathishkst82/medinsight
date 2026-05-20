@@ -15,27 +15,33 @@ jobs:
   validate:
     if: ${{ inputs.action == 'validate' }}
     uses: ./.github/workflows/terraform-validate.yml
-    with: { environment: ${{ inputs.environment }} }
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
   plan:
     if: ${{ inputs.action == 'plan' || inputs.action == 'plan-apply' }}
     uses: ./.github/workflows/terraform-plan.yml
-    with: { environment: ${{ inputs.environment }}, tf_use_extra_args: ${{ inputs.tf_use_extra_args }} }
+    with:
+      environment: ${{ inputs.environment }}
+      tf_use_extra_args: ${{ inputs.tf_use_extra_args }}
     secrets: inherit
   apply:
     if: ${{ inputs.action == 'plan-apply' }}
     needs: [plan]
     uses: ./.github/workflows/terraform-apply.yml
-    with: { environment: ${{ inputs.environment }} }
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
   destroy-plan:
     if: ${{ inputs.action == 'destroy-plan' || inputs.action == 'destroy-apply' }}
     uses: ./.github/workflows/terraform-destroy-plan.yml
-    with: { environment: ${{ inputs.environment }} }
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
   destroy-apply:
     if: ${{ inputs.action == 'destroy-apply' }}
     needs: [destroy-plan]
     uses: ./.github/workflows/terraform-destroy-apply.yml
-    with: { environment: ${{ inputs.environment }} }
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
