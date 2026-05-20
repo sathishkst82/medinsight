@@ -16,6 +16,15 @@ jobs:
       contents: read
 
     steps:
+      - name: Set environment path
+        id: env-path
+        run: |
+          case "${{ inputs.environment }}" in
+            DEV) echo "path=dev" >> $GITHUB_OUTPUT ;;
+            UAT) echo "path=uat" >> $GITHUB_OUTPUT ;;
+            *) echo "path=prod" >> $GITHUB_OUTPUT ;;
+          esac
+
       - uses: actions/checkout@v4
 
       - uses: azure/login@v2
@@ -26,13 +35,18 @@ jobs:
 
       - uses: hashicorp/setup-terraform@v3
 
-      - run: terraform init -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER_NAME }}" -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
-        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
+      - run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER_NAME }}" \
+            -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
+        working-directory: environments/${{ steps.env-path.outputs.path }}
 
       - run: terraform plan -destroy -out=tfdestroy
-        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
+        working-directory: environments/${{ steps.env-path.outputs.path }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: tfdestroy-${{ inputs.environment }}
-          path: environments/**/tfdestroy
+          path: environments/${{ steps.env-path.outputs.path }}/tfdestroy
