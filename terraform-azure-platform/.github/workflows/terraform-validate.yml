@@ -6,7 +6,6 @@ on:
       environment:
         type: string
         required: true
-        default: ''
 
 jobs:
   validate:
@@ -17,6 +16,15 @@ jobs:
       contents: read
 
     steps:
+      - name: Set environment path
+        id: env-path
+        run: |
+          case "${{ inputs.environment }}" in
+            DEV) echo "path=dev" >> $GITHUB_OUTPUT ;;
+            UAT) echo "path=uat" >> $GITHUB_OUTPUT ;;
+            *) echo "path=prod" >> $GITHUB_OUTPUT ;;
+          esac
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -34,7 +42,7 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
+        working-directory: environments/${{ steps.env-path.outputs.path }}
         run: |
           terraform init \
             -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" \
@@ -43,15 +51,15 @@ jobs:
             -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
 
       - name: Terraform Validate
-        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
+        working-directory: environments/${{ steps.env-path.outputs.path }}
         run: terraform validate
 
       - name: Terraform Docs
         uses: terraform-docs/gh-actions@v1.0.0
         with:
-          working-dir: .
+          working-dir: environments/${{ steps.env-path.outputs.path }}
 
-      - name: TFLint
+      - name: TFLint Setup
         uses: terraform-linters/setup-tflint@v4
         with:
           tflint_version: latest
@@ -60,3 +68,4 @@ jobs:
         run: |
           tflint --init
           tflint --recursive
+        working-directory: environments/${{ steps.env-path.outputs.path }}
