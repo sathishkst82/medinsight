@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { name: tfplan-${{ inputs.environment }}, path: . }
+        with: { name: tfplan-${{ inputs.environment }}, path: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }} }
       - uses: azure/login@v2
         with: { client-id: ${{ vars.AZURE_CLIENT_ID }}, tenant-id: ${{ vars.AZURE_TENANT_ID }}, subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }} }
       - uses: hashicorp/setup-terraform@v3
