@@ -1,22 +1,62 @@
 name: terraform-plan
-on: { workflow_call: { inputs: { environment: { type: string, required: true }, tf_use_extra_args: { type: boolean, required: false, default: false } } } }
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      tf_use_extra_args:
+        type: boolean
+        required: false
+        default: false
+
 jobs:
   plan:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    permissions: { id-token: write, contents: read, pull-requests: write }
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: azure/login@v2
-        with: { client-id: ${{ vars.AZURE_CLIENT_ID }}, tenant-id: ${{ vars.AZURE_TENANT_ID }}, subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }} }
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       - uses: hashicorp/setup-terraform@v3
-      - run: curl -fsSL https://downloads.wiz.io/wizcli/latest/wizcli-linux-amd64 -o wizcli && chmod +x wizcli && sudo mv wizcli /usr/local/bin/wizcli
-      - run: wizcli auth --id "${{ secrets.WIZ_CLIENT_ID }}" --secret "${{ secrets.WIZ_CLIENT_SECRET }}"
-      - run: wizcli iac scan --path .
-      - run: terraform init -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
+
+      - name: Install Wiz CLI
+        run: |
+          curl -fsSL https://downloads.wiz.io/wizcli/latest/wizcli-linux-amd64 -o wizcli
+          chmod +x wizcli
+          sudo mv wizcli /usr/local/bin/wizcli
+
+      - name: Authenticate Wiz
+        run: wizcli auth --id "${{ secrets.WIZ_CLIENT_ID }}" --secret "${{ secrets.WIZ_CLIENT_SECRET }}"
+
+      - name: Scan IaC with Wiz
+        run: wizcli iac scan --path .
+
+      - name: Terraform Init
+        run: terraform init -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER_NAME }}" -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
         working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
-      - run: terraform validate && tflint --init && tflint --recursive
-      - run: terraform plan -out tfplan ${{ inputs.tf_use_extra_args && secrets.EXTRA_ARGS || '' }}
+
+      - name: Terraform Validate and Lint
+        run: terraform validate && tflint --init && tflint --recursive
         working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
-      - uses: actions/upload-artifact@v4
-        with: { name: tfplan-${{ inputs.environment }}, path: environments/**/tfplan }
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan ${{ inputs.tf_use_extra_args && secrets.EXTRA_ARGS || '' }}
+        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ inputs.environment }}
+          path: environments/**/tfplan
