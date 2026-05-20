@@ -13,4 +13,4 @@ jobs:
         with: { client-id: ${{ vars.AZURE_CLIENT_ID }}, tenant-id: ${{ vars.AZURE_TENANT_ID }}, subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }} }
       - uses: hashicorp/setup-terraform@v3
       - run: terraform apply -auto-approve tfdestroy
-        working-directory: environments/${{ inputs.environment == 'DEV' && 'dev' || inputs.environment == 'UAT' && 'uat' || 'prod' }}
+        working-directory: ${{ inputs.environment == 'DEV' && 'environments/dev' || inputs.environment == 'UAT' && 'environments/uat' || 'environments/prod' }}
